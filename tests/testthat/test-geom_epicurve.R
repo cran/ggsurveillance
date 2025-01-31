@@ -1,0 +1,98 @@
+test_that("geom_epicurve handles basic date inputs", {
+  # Test data
+  test_dates <- data.frame(
+    date = as.Date("2024-01-01") + 0:10,
+    cat = c(rep("A", 5), rep("B", 6))
+  )
+
+  # Create plot
+  p <- ggplot(test_dates, aes(x = date, fill = cat)) +
+    geom_vline_year() +
+    geom_epicurve(date_resolution = "day") +
+    scale_y_cases_5er()
+
+  # Test that the plot is created successfully
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("geom_epicurve handles flipped aes", {
+  # Test data
+  test_dates <- data.frame(
+    date = as.Date("2024-01-01") + 0:10,
+    cat = c(rep("A", 5), rep("B", 6))
+  )
+
+  # Create plot
+  p <- ggplot(test_dates, aes(y = date, fill = cat)) +
+    geom_hline_year() +
+    geom_epicurve(date_resolution = "day") +
+    scale_x_cases_5er(n = 10, n.min = 9, u5.bias = 3)
+
+  # Test that the plot is created successfully
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("geom_epicurve handles datetime data", {
+  test_datetime <- data.frame(
+    datetime = as.POSIXct("2024-01-01") + seq(0, 86400 * 20, by = 86400)
+  )
+
+  p <- ggplot(test_datetime, aes(x = datetime)) +
+    geom_vline_year() +
+    geom_epicurve(date_resolution = "day") +
+    scale_y_cases_5er(n = 5, n.min = 4, u5.bias = 10)
+
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("geom_epicurve respects different date resolutions", {
+  test_dates <- data.frame(
+    date = rep(as.Date("2024-01-01") + 0:30, each = 2)
+  )
+
+  # Test different resolutions
+  resolutions <- c("day", "week", "month")
+  for (res in resolutions) {
+    p <- ggplot(test_dates, aes(x = date)) +
+      geom_epicurve(date_resolution = res)
+    expect_s3_class(p, "ggplot")
+  }
+})
+
+test_that("geom_epicurve handles NA values correctly", {
+  # Test data with NA values
+  test_dates <- data.frame(
+    date = c(as.Date("2024-01-01") + 0:5, NA, as.Date("2024-01-08") + 0:2),
+    cat = c(rep("A", 6), NA, rep("B", 3))
+  )
+
+  # Both plots should still render successfully
+  expect_no_error({
+    p1 <- ggplot(test_dates, aes(x = date, fill = cat)) +
+      geom_epicurve(date_resolution = "day", na.rm = FALSE)
+    p1
+  })
+  expect_s3_class(p1, "ggplot")
+
+  p2 <- ggplot(test_dates, aes(x = date, fill = cat)) +
+    geom_epicurve(date_resolution = "day", na.rm = TRUE)
+  expect_s3_class(p2, "ggplot")
+})
+
+
+test_that("geom_epicurve with stat = 'bin_date'", {
+  plot_data_epicurve_imp <- data.frame(
+    date = rep(as.Date("2024-01-01") + ((0:300) * 1), times = rpois(301, 0.5))
+    # category = rep(c("A", "B"), times = 7)
+  )
+
+  expect_no_error({
+    ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
+      geom_epicurve(date_resolution = "month", color = "black", just = 0.5, relative.width = 1, stat = "bin_date")
+  })
+
+  expect_no_error({
+    ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
+      geom_epicurve(color = "black", just = 0.5, relative.width = 1, stat = "bin_date")
+  })
+})
