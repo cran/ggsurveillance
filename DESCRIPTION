@@ -1,13 +1,12 @@
 Package: ggsurveillance
-Title: Tools and 'ggplot2' Extensions for Infectious Disease
-        Surveillance and Outbreak Investigation
-Version: 0.1.1
+Title: Tools for Outbreak Investigation/Infectious Disease Surveillance
+Version: 0.1.2
 Authors@R: 
     person("Alexander", "Bartel", , "alexander.bartel@fu-berlin.de", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-1280-6138"))
 Description: Create epicurves or epigantt charts in 'ggplot2'. Prepare
     data for visualisation or other reporting for infectious disease
-    surveillance and outbreak investigation.  Includes functions to solve
+    surveillance and outbreak investigation. Includes tidy functions to solve
     date based transformations for common reporting tasks, like 
     (A) seasonal date alignment for respiratory disease surveillance, 
     (B) date-based case binning based on specified time intervals like
@@ -31,8 +30,8 @@ Language: en-GB
 LazyData: true
 NeedsCompilation: no
 RoxygenNote: 7.3.2
-Packaged: 2025-01-31 08:54:46 UTC; Alex
+Packaged: 2025-02-11 16:28:04 UTC; Alex
 Author: Alexander Bartel [aut, cre] (<https://orcid.org/0000-0002-1280-6138>)
 Maintainer: Alexander Bartel <alexander.bartel@fu-berlin.de>
 Repository: CRAN
-Date/Publication: 2025-01-31 15:50:05 UTC
+Date/Publication: 2025-02-11 17:00:05 UTC

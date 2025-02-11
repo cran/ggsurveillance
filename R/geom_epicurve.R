@@ -1,4 +1,4 @@
-#' Create an epidemic curve plot or used date binning of observations
+#' Create an epidemic curve plot or bin/count observations by date periods
 #'
 #' Creates a epicurve plot for visualizing epidemic case counts in outbreaks (epidemiological curves).
 #' An epicurve is a bar plot, where every case is outlined. \code{geom_epicurve} additionally provides
@@ -12,8 +12,8 @@
 #'   * **fill**: for colouring groups
 #'   * **weight**: if data is already aggregated (e.g. case counts)
 #' @param data The data frame containing the variables for the plot
-#' @param stat either "`epicurve`" for outlines around cases or "`date_bin`" for outlines around (fill) groups.
-#' For large numbers of cases please use "`date_bin`" to reduce number of drawn rectangles.
+#' @param stat either "`epicurve`" for outlines around cases or "`bin_date`" for outlines around (fill) groups.
+#' For large numbers of cases please use "`bin_date`" to reduce number of drawn rectangles.
 #' @param position Position adjustment. Currently supports "`stack`".
 #' @param date_resolution Character string specifying the time unit for date aggregation.
 #' Set to \code{NULL} or `NA` for no date aggregation \cr
@@ -117,7 +117,7 @@ stat_bin_date <- function(mapping = NULL, data = NULL,
   layer(
     data = data,
     mapping = mapping,
-    stat = StatCount,
+    stat = StatBinDate,
     geom = geom,
     position = position,
     show.legend = show.legend,
@@ -167,11 +167,11 @@ StatEpicurve <- ggproto("StatEpicurve", Stat,
     week_start <- params$week_start %||% 1
     flipped_aes <- params$flipped_aes %||% any(data$flipped_aes) %||% FALSE
 
-    if (date_resolution == "isoweek") {
+    if (!is.na(date_resolution) & date_resolution == "isoweek") {
       date_resolution <- "week"
       week_start <- 1
     } # ISO
-    if (date_resolution == "epiweek") {
+    if (!is.na(date_resolution) & date_resolution == "epiweek") {
       date_resolution <- "week"
       week_start <- 7
     } # US
@@ -276,12 +276,17 @@ StatBinDate <- ggproto("StatBinDate", Stat,
     date_resolution <- date_resolution %||% NA
     week_start <- week_start %||% 1
     flipped_aes <- flipped_aes %||% any(data$flipped_aes) %||% FALSE
+    
+    if (is.na(date_resolution)) {
+      cli::cli_warn("It seems you provided no date_resolution. Column used as specified.
+                          Please use date_resolution = 'week' to round to week (stat_bin_date/date_count).")
+    }
 
-    if (date_resolution == "isoweek") {
+    if (!is.na(date_resolution) & date_resolution == "isoweek") {
       date_resolution <- "week"
       week_start <- 1
     } # ISO
-    if (date_resolution == "epiweek") {
+    if (!is.na(date_resolution) & date_resolution == "epiweek") {
       date_resolution <- "week"
       week_start <- 7
     } # US
@@ -331,11 +336,6 @@ StatBinDate <- ggproto("StatBinDate", Stat,
     } else {
       data$x_ll <- data$x
       data$x_ul <- data$x
-    }
-
-    if (is.na(date_resolution)) {
-      cli::cli_warn("It seems you provided no date_resolution. Column used as specified.
-                          Please use date_resolution = 'week' to round to week (stat_date_bin/count).")
     }
 
     data$weight <- data$weight %||% rep(1, length(data$x))
@@ -443,7 +443,7 @@ GeomEpicurve <- ggproto("GeomEpicurve", GeomBar,
 
     if ((max_bar_height[1] > 10000)) {
       cli::cli_alert_warning(
-        "If you experience performance problems because of high case numbers, consider using stat = 'date_bin' (geom_epicurve)."
+        "If you experience performance problems because of high case numbers, consider using stat = 'bin_date' (geom_epicurve)."
       )
     }
 
