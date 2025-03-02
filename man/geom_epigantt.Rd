@@ -16,10 +16,13 @@ geom_epigantt(
 )
 }
 \arguments{
-\item{mapping}{Set of aesthetic mappings created by \code{\link[ggplot2:aes]{aes()}}. If specified and
-\code{inherit.aes = TRUE} (the default), it is combined with the default mapping
-at the top level of the plot. You must supply \code{mapping} if there is no plot
-mapping.}
+\item{mapping}{Set of aesthetic mappings. Must include:
+\itemize{
+\item \code{y}: Case/patient identifier
+\item \code{xmin}: Start date/time of interval
+\item \code{xmax}: End date/time of interval
+\item Optional: \code{colour} or \code{fill} for different locations/categories
+}}
 
 \item{data}{The data to be displayed in this layer. There are three
 options:
@@ -36,58 +39,17 @@ the plot data. The return value must be a \code{data.frame}, and
 will be used as the layer data. A \code{function} can be created
 from a \code{formula} (e.g. \code{~ head(.x, 10)}).}
 
-\item{stat}{The statistical transformation to use on the data for this layer.
-When using a \verb{geom_*()} function to construct a layer, the \code{stat}
-argument can be used the override the default coupling between geoms and
-stats. The \code{stat} argument accepts the following:
-\itemize{
-\item A \code{Stat} ggproto subclass, for example \code{StatCount}.
-\item A string naming the stat. To give the stat as a string, strip the
-function name of the \code{stat_} prefix. For example, to use \code{stat_count()},
-give the stat as \code{"count"}.
-\item For more information and other ways to specify the stat, see the
-\link[ggplot2:layer_stats]{layer stat} documentation.
-}}
+\item{stat}{A \code{ggplot2} stat. Defaults to \code{"identity"}.}
 
-\item{position}{A position adjustment to use on the data for this layer. This
-can be used in various ways, including to prevent overplotting and
-improving the display. The \code{position} argument accepts the following:
-\itemize{
-\item The result of calling a position function, such as \code{position_jitter()}.
-This method allows for passing extra arguments to the position.
-\item A string naming the position adjustment. To give the position as a
-string, strip the function name of the \code{position_} prefix. For example,
-to use \code{position_jitter()}, give the position as \code{"jitter"}.
-\item For more information and other ways to specify the position, see the
-\link[ggplot2:layer_positions]{layer position} documentation.
-}}
+\item{position}{A \code{ggplot2} position. Defaults to \code{"identity"}.}
 
-\item{...}{Other arguments passed on to \code{\link[ggplot2:layer]{layer()}}'s \code{params} argument. These
-arguments broadly fall into one of 4 categories below. Notably, further
-arguments to the \code{position} argument, or aesthetics that are required
-can \emph{not} be passed through \code{...}. Unknown arguments that are not part
-of the 4 categories below are ignored.
+\item{...}{Additional parameters:
 \itemize{
-\item Static aesthetics that are not mapped to a scale, but are at a fixed
-value and apply to the layer as a whole. For example, \code{colour = "red"}
-or \code{linewidth = 3}. The geom's documentation has an \strong{Aesthetics}
-section that lists the available options. The 'required' aesthetics
-cannot be passed on to the \code{params}. Please note that while passing
-unmapped aesthetics as vectors is technically possible, the order and
-required length is not guaranteed to be parallel to the input data.
-\item When constructing a layer using
-a \verb{stat_*()} function, the \code{...} argument can be used to pass on
-parameters to the \code{geom} part of the layer. An example of this is
-\code{stat_density(geom = "area", outline.type = "both")}. The geom's
-documentation lists which parameters it can accept.
-\item Inversely, when constructing a layer using a
-\verb{geom_*()} function, the \code{...} argument can be used to pass on parameters
-to the \code{stat} part of the layer. An example of this is
-\code{geom_area(stat = "density", adjust = 0.5)}. The stat's documentation
-lists which parameters it can accept.
-\item The \code{key_glyph} argument of \code{\link[ggplot2:layer]{layer()}} may also be passed on through
-\code{...}. This can be one of the functions described as
-\link[ggplot2:draw_key]{key glyphs}, to change the display of the layer in the legend.
+\item \code{linewidth}: Set width of bars directly, disables auto-scaling if set.
+\item \code{lw_scaling_factor}: Scaling factor for auto-width calculation.
+The linewidth is calculated as lw_scaling_factor/number_of_rows (default: 90)
+\item \code{lw_min}: Minimum auto-scaled line width cutoff (default: 1)
+\item \code{lw_max}: Maximum auto-scaled line width cutoff (default: 8)
 }}
 
 \item{na.rm}{If \code{FALSE}, the default, missing values are removed with
@@ -108,6 +70,47 @@ the default plot specification, e.g. \code{\link[ggplot2:borders]{borders()}}.}
 A \code{ggplot2} geom layer that can be added to a plot
 }
 \description{
-Various ways of representing a vertical interval defined by \code{y},
-\code{xmin} and \code{xmax}. Each case draws a single graphical object.
+Creates Epi Gantt charts, which are specialized timeline visualizations used in
+outbreak investigations to track potential exposure periods and identify transmission
+patterns. They are particularly useful for:
+\itemize{
+\item Hospital outbreak investigations to visualize patient movements between wards
+\item Identifying potential transmission events by showing when cases were in the same location
+\item Visualizing common exposure times using overlapping exposure time intervals
+}
+
+The chart displays time intervals as horizontal bars, typically with one row per case/patient.
+Different colours can be used to represent different locations (e.g., hospital wards) or
+exposure types. Additional points or markers can show important events like symptom onset
+or test dates.
+
+\code{geom_epigantt()} will adjust the linewidth depending on the number of cases.
+}
+\examples{
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# Transform hospital outbreak line list to long format
+linelist_hospital_outbreak |>
+  pivot_longer(
+    cols = starts_with("ward"),
+    names_to = c(".value", "num"),
+    names_pattern = "ward_(name|start_of_stay|end_of_stay)_([0-9]+)",
+    values_drop_na = TRUE
+  ) -> df_stays_long
+
+linelist_hospital_outbreak |>
+  pivot_longer(cols = starts_with("pathogen"), values_to = "date") -> df_detections_long
+
+# Create Epi Gantt chart showing ward stays and test dates
+ggplot(df_stays_long) +
+  geom_epigantt(aes(y = Patient, xmin = start_of_stay, xmax = end_of_stay, color = name)) +
+  geom_point(aes(y = Patient, x = date, shape = "Date of pathogen detection"),
+    data = df_detections_long
+  ) +
+  scale_y_discrete_reverse() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
 }

@@ -15,6 +15,52 @@ library(tidyr)
 library(outbreaks)
 library(ggsurveillance)
 
+## ----echo=FALSE---------------------------------------------------------------
+# Transform to long format
+linelist_hospital_outbreak |>
+  pivot_longer(
+    cols = starts_with("ward"),
+    names_to = c(".value", "num"),
+    names_pattern = "ward_(name|start_of_stay|end_of_stay)_([0-9]+)",
+    values_drop_na = TRUE
+  ) -> df_stays_long
+
+linelist_hospital_outbreak |>
+  pivot_longer(cols = starts_with("pathogen"), values_to = "date") -> df_detections_long
+
+# Plot
+ggplot(df_stays_long) +
+  geom_epigantt(aes(y = Patient, xmin = start_of_stay, xmax = end_of_stay, color = name)) +
+  geom_point(aes(y = Patient, x = date, shape = "Date of pathogen detection"), data = df_detections_long) +
+  scale_y_discrete_reverse() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+## -----------------------------------------------------------------------------
+linelist_hospital_outbreak
+
+## -----------------------------------------------------------------------------
+linelist_hospital_outbreak |>
+  pivot_longer(
+    cols = starts_with("ward"),
+    names_to = c(".value", "num"),
+    names_pattern = "ward_(name|start_of_stay|end_of_stay)_([0-9]+)",
+    values_drop_na = TRUE
+  ) -> df_stays_long
+df_stays_long |> select(Patient, num:end_of_stay)
+
+linelist_hospital_outbreak |>
+  pivot_longer(cols = starts_with("pathogen"), values_to = "date", values_drop_na = TRUE) -> df_detections_long
+df_detections_long |> select(Patient, name, date)
+
+## -----------------------------------------------------------------------------
+ggplot(df_stays_long) +
+  geom_epigantt(aes(y = Patient, xmin = start_of_stay, xmax = end_of_stay, color = name)) +
+  geom_point(aes(y = Patient, x = date, shape = "Date of pathogen detection"), data = df_detections_long) +
+  scale_y_discrete_reverse() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
 ## -----------------------------------------------------------------------------
 outbreaks::varicella_sim_berlin |>
   filter(center1 == "Platz der Luftbruecke") |>
@@ -30,15 +76,15 @@ outbreaks::varicella_sim_berlin |>
     names_pattern = "(\\w+)(\\d+)"
   ) |>
   ggplot(aes(y = fullname)) +
-  geom_epigantt(aes(xmin = arrival, xmax = leave, colour = center), linewidth = 4) +
-  geom_point(aes(x = onset)) +
+  geom_epigantt(aes(xmin = arrival, xmax = leave, colour = center), lw_scaling_factor = 100) + # linewidth = 4
+  # geom_point(aes(x = onset)) +
   theme_bw() +
   theme(legend.position = "top")
 
 ## -----------------------------------------------------------------------------
 ggplot(outbreaks::measles_hagelloch_1861, aes(y = case_ID, xmin = date_of_prodrome, xmax = date_of_rash, fill = class)) +
   geom_vline_year(color = "grey50") +
-  geom_epigantt(linewidth = 1) +
+  geom_epigantt() +
   scale_x_date(date_breaks = "2 weeks", date_labels = "W%V'%G") +
   theme_bw()
 

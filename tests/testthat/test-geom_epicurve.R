@@ -9,8 +9,9 @@ test_that("geom_epicurve handles basic date inputs", {
   p <- ggplot(test_dates, aes(x = date, fill = cat)) +
     geom_vline_year() +
     geom_epicurve(date_resolution = "day") +
-    stat_bin_date(aes(y = after_stat(count)*1.05, label = after_stat(count)),
-                  date_resolution = "day", geom = "text") +
+    stat_bin_date(aes(y = after_stat(count) * 1.05, label = after_stat(count)),
+      date_resolution = "day", geom = "text"
+    ) +
     scale_y_cases_5er()
 
   # Test that the plot is created successfully
@@ -26,11 +27,12 @@ test_that("geom_epicurve handles date_resolution = NA/NULL", {
 
   # Create plot
   expect_no_error({
-    ggplot(test_dates, aes(x = date, fill = cat)) +
+    ggplot(test_dates, aes(x = date)) +
       geom_vline_year() +
-      geom_epicurve() +
-      stat_bin_date(aes(y = after_stat(count)*1.05, label = after_stat(count)),
-                    geom = "text") +
+      geom_epicurve(aes(fill = cat), date_resolution = "week") +
+      stat_bin_date(aes(y = after_stat(count) * 1.05, label = after_stat(count)),
+        geom = "text", date_resolution = "week",
+      ) +
       scale_y_cases_5er()
   })
 })
@@ -63,6 +65,7 @@ test_that("geom_epicurve handles datetime data", {
     scale_y_cases_5er(n = 5, n.min = 4, u5.bias = 10)
 
   expect_s3_class(p, "ggplot")
+  expect_no_error({p})
 })
 
 test_that("geom_epicurve respects different date resolutions", {

@@ -11,6 +11,7 @@ EpiCurves
 EpiGantt
 Epicurve
 Epicurves
+Epigantt
 Influenzafälle
 Institut
 Kikwit
@@ -20,6 +21,7 @@ LOQ
 Laborbestätigte
 Lifecycle
 Linetype
+MRGN
 Parrish
 SARS
 Zenodo
@@ -27,6 +29,7 @@ asn
 atanh
 biostats
 boxcox
+cutoff
 datetime
 ed
 epicurve
@@ -34,18 +37,17 @@ epicurves
 epigantt
 epiweek
 etc
-geom's
 geoms
 ggplot
-ggproto
 hms
 isoweek
+linewidth
+lw
 plotmath
 quasiquotation
 rd
 rlang
 stat
-stat's
 tibble
 tidyr
 tidyverse
