@@ -48,13 +48,14 @@ library(ggplot2)
 
 influenza_germany |>
   align_dates_seasonal(
-    dates_from = ReportingWeek, date_resolution = "epiweek", start = 28
+    dates_from = ReportingWeek, date_resolution = "isoweek", start = 28
   ) -> df_flu_aligned
 
 ggplot(df_flu_aligned, aes(x = date_aligned, y = Incidence, color = season)) +
   geom_line() +
   facet_wrap(~AgeGroup) +
-  theme_bw()
+  theme_bw() +
+  theme_mod_rotate_x_axis_labels_45()
 
 ## -----------------------------------------------------------------------------
 influenza_germany |>

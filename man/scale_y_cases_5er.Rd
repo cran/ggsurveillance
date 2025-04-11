@@ -8,7 +8,7 @@
 scale_y_cases_5er(
   name = waiver(),
   n = 8,
-  n.min = 5,
+  min.n = 5,
   u5.bias = 4,
   expand = NULL,
   labels = waiver(),
@@ -25,7 +25,7 @@ scale_y_cases_5er(
 scale_x_cases_5er(
   name = waiver(),
   n = 8,
-  n.min = 5,
+  min.n = 5,
   u5.bias = 4,
   expand = NULL,
   labels = waiver(),
@@ -47,7 +47,7 @@ omitted.}
 
 \item{n}{Target number of breaks passed to \code{\link[base:pretty]{base::pretty()}}. Defaults to 8.}
 
-\item{n.min}{Minimum number of breaks passed to \code{\link[base:pretty]{base::pretty()}}. Defaults to 5.}
+\item{min.n}{Minimum number of breaks passed to \code{\link[base:pretty]{base::pretty()}}. Defaults to 5.}
 
 \item{u5.bias}{The "5-bias" parameter passed to \code{\link[base:pretty]{base::pretty()}}; higher values
 push the breaks more strongly toward multiples of 5. Defaults to 4.}
@@ -130,8 +130,10 @@ library(ggplot2)
 data <- data.frame(date = as.Date("2024-01-01") + 0:30)
 ggplot(data, aes(x = date)) +
   geom_epicurve(date_resolution = "week") +
-  scale_y_cases_5er()
+  scale_y_cases_5er() +
+  theme_mod_remove_minor_grid_y()
 }
 \seealso{
-\code{\link[=geom_epicurve]{geom_epicurve()}}, \code{\link[ggplot2:scale_continuous]{ggplot2::scale_y_continuous()}}, \code{\link[base:pretty]{base::pretty()}}
+\code{\link[=geom_epicurve]{geom_epicurve()}}, \code{\link[ggplot2:scale_continuous]{ggplot2::scale_y_continuous()}}, \code{\link[base:pretty]{base::pretty()}},
+\code{\link[=theme_mod_remove_minor_grid_y]{theme_mod_remove_minor_grid_y()}}
 }

@@ -34,7 +34,7 @@ ggplot(df_stays_long) +
   geom_point(aes(y = Patient, x = date, shape = "Date of pathogen detection"), data = df_detections_long) +
   scale_y_discrete_reverse() +
   theme_bw() +
-  theme(legend.position = "bottom")
+  theme_mod_legend_bottom()
 
 ## -----------------------------------------------------------------------------
 linelist_hospital_outbreak
@@ -59,7 +59,7 @@ ggplot(df_stays_long) +
   geom_point(aes(y = Patient, x = date, shape = "Date of pathogen detection"), data = df_detections_long) +
   scale_y_discrete_reverse() +
   theme_bw() +
-  theme(legend.position = "bottom")
+  theme_mod_legend_bottom()
 
 ## -----------------------------------------------------------------------------
 outbreaks::varicella_sim_berlin |>
@@ -78,8 +78,9 @@ outbreaks::varicella_sim_berlin |>
   ggplot(aes(y = fullname)) +
   geom_epigantt(aes(xmin = arrival, xmax = leave, colour = center), lw_scaling_factor = 100) + # linewidth = 4
   # geom_point(aes(x = onset)) +
+  scale_x_date() +
   theme_bw() +
-  theme(legend.position = "top")
+  theme_mod_legend_top()
 
 ## -----------------------------------------------------------------------------
 ggplot(outbreaks::measles_hagelloch_1861, aes(y = case_ID, xmin = date_of_prodrome, xmax = date_of_rash, fill = class)) +

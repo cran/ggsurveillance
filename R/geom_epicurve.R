@@ -19,7 +19,7 @@
 #' Set to \code{NULL} or `NA` for no date aggregation \cr
 #' Possible values are: `"day"`, `"week"`, `"month"`, `"bimonth"`, `"season"`, `"quarter"`, `"halfyear"`, `"year"`.
 #' To special values enforce ISO or US week standard:
-#'  - `isoweek` will force `dadte_resolution = week` and `week_start = 1` (ISO and ECDC Standard)
+#'  - `isoweek` will force `date_resolution = week` and `week_start = 1` (ISO and ECDC Standard)
 #'  - `epiweek` will force `date_resolution = week` and `week_start = 7` (US CDC Standard)
 #' @param week_start Integer specifying the start of the week (1 = Monday, 7 = Sunday). \cr
 #'        Only used when date_resolution includes weeks. Defaults to 1 (Monday). \cr
@@ -60,7 +60,7 @@
 #' )
 #'
 #' ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
-#'   geom_vline_year(year_break = "01-01", show.legend = TRUE) +
+#'   geom_vline_year(break_type = "week") +
 #'   geom_epicurve(date_resolution = "week") +
 #'   labs(title = "Epicurve Example") +
 #'   scale_y_cases_5er() +
@@ -114,7 +114,7 @@ stat_bin_date <- function(mapping = NULL, data = NULL,
                           na.rm = FALSE,
                           show.legend = NA,
                           inherit.aes = TRUE) {
-  layer(
+  ggplot2::layer(
     data = data,
     mapping = mapping,
     stat = StatBinDate,

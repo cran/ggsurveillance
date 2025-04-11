@@ -71,7 +71,7 @@ Set to \code{NULL} or \code{NA} for no date aggregation \cr
 Possible values are: \code{"day"}, \code{"week"}, \code{"month"}, \code{"bimonth"}, \code{"season"}, \code{"quarter"}, \code{"halfyear"}, \code{"year"}.
 To special values enforce ISO or US week standard:
 \itemize{
-\item \code{isoweek} will force \code{dadte_resolution = week} and \code{week_start = 1} (ISO and ECDC Standard)
+\item \code{isoweek} will force \code{date_resolution = week} and \code{week_start = 1} (ISO and ECDC Standard)
 \item \code{epiweek} will force \code{date_resolution = week} and \code{week_start = 7} (US CDC Standard)
 }}
 
@@ -135,7 +135,7 @@ plot_data_epicurve_imp <- data.frame(
 )
 
 ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
-  geom_vline_year(year_break = "01-01", show.legend = TRUE) +
+  geom_vline_year(break_type = "week") +
   geom_epicurve(date_resolution = "week") +
   labs(title = "Epicurve Example") +
   scale_y_cases_5er() +

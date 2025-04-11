@@ -25,6 +25,7 @@ MRGN
 Parrish
 SARS
 Zenodo
+aes
 asn
 atanh
 biostats
@@ -41,6 +42,7 @@ geoms
 ggplot
 hms
 isoweek
+linetype
 linewidth
 lw
 plotmath

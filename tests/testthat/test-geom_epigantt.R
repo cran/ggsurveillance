@@ -7,8 +7,19 @@ test_that("linewidth calculation works correctly", {
   )
 
   # Test with default parameters
-  result <- .calc_linewidth(test_data, list(flipped_aes = TRUE), max = 8, min = 1, scaling_factor = 100)
+  result <- .calc_linewidth(test_data, flipped_aes = TRUE, max = 8, min = 1, scaling_factor = 100)
   expect_identical(result, 5) # 100/20 = 5
+
+  # Test flipped aes
+  test_data <- data.frame(
+    x = factor(1:20),
+    ymin = as.Date("2024-01-01"),
+    ymax = as.Date("2024-01-10")
+  )
+
+  # Test with default parameters
+  result <- .calc_linewidth(test_data, flipped_aes = FALSE, max = 8, min = 1, scaling_factor = 100)
+  expect_identical(result, 5)
 
   # Test with single observation (should return max)
   single_data <- data.frame(
@@ -16,7 +27,7 @@ test_that("linewidth calculation works correctly", {
     xmin = as.Date("2024-01-01"),
     xmax = as.Date("2024-01-10")
   )
-  result <- .calc_linewidth(single_data, list(flipped_aes = TRUE), max = 8, min = 1, scaling_factor = 100)
+  result <- .calc_linewidth(single_data, flipped_aes = TRUE, max = 8, min = 1, scaling_factor = 100)
   expect_identical(result, 8)
 
   # Test with many observations (should return min)
@@ -25,7 +36,7 @@ test_that("linewidth calculation works correctly", {
     xmin = as.Date("2024-01-01"),
     xmax = as.Date("2024-01-10")
   )
-  result <- .calc_linewidth(many_data, list(flipped_aes = TRUE), max = 8, min = 1, scaling_factor = 100)
+  result <- .calc_linewidth(many_data, flipped_aes = TRUE, max = 8, min = 1, scaling_factor = 100)
   expect_identical(result, 1)
 })
 
@@ -43,11 +54,14 @@ test_that("geom_epigantt works with example data", {
     geom_epigantt(aes(y = Patient, xmin = start, xmax = end, color = group))
 
   expect_s3_class(p, "ggplot")
-
   # Check that the plot has the correct layers
   expect_true(any(sapply(p$layers, function(l) inherits(l$geom, "GeomEpigantt"))))
-
   expect_no_error(p)
+
+  # Coord Flip
+  p1 <- ggplot(df) +
+    geom_epigantt(aes(x = Patient, ymin = start, ymax = end, color = group))
+  expect_no_error(p1)
 })
 
 test_that("geom_epigantt handles NA values correctly", {
@@ -74,7 +88,6 @@ test_that("geom_epigantt handles NA values correctly", {
 })
 
 test_that("geom_epigantt full test", {
-
   linelist_hospital_outbreak |>
     tidyr::pivot_longer(
       cols = starts_with("ward"),

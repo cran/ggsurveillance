@@ -24,6 +24,43 @@ test_that("align_and_bin_dates_seasonal correctly aggregates numeric values", {
     sum(df$cases),
     sum(result$n)
   )
+
+  # Test datetime / POSIXct
+  dates <- seq(as_datetime("2023-01-01"), as_datetime("2024-03-01"), by = "week")
+  df2 <- data.frame(
+    date = dates,
+    cases = df$cases # Use previous case numbers
+  )
+  
+  # Test aggregation
+  result <- align_and_bin_dates_seasonal(
+    df2,
+    n = cases,
+    dates_from = date,
+    date_resolution = "month"
+  )
+  
+  # Compare total cases
+  expect_identical(
+    sum(df$cases),
+    sum(result$n)
+  )
+  
+  # Test non date column
+  expect_error(
+    df |>
+      align_dates_seasonal(
+        dates_from = region,
+        date_resolution = "month"
+      )
+  )
+
+  # Test non existing column
+  expect_error(df |>
+    align_dates_seasonal(
+      dates_from = test,
+      date_resolution = "month"
+    ))
 })
 
 test_that("align_and_bin_dates_seasonal handles quoted column names", {
@@ -72,6 +109,17 @@ test_that("align_and_bin_dates_seasonal maintains grouping variables", {
   expect_identical(
     as.numeric(counts_by_region),
     as.numeric(result_by_region)
+  )
+
+  # Test grouping by date column
+  expect_warning(
+    df |>
+      dplyr::group_by(date) |>
+      align_and_bin_dates_seasonal(
+        n = cases,
+        dates_from = date,
+        date_resolution = "month"
+      )
   )
 })
 
@@ -237,4 +285,17 @@ test_that("align_and_bin_dates_seasonal fills gaps correctly", {
     )
 
   expect_identical(result$n, c(5, 0, 4, 10, 0, 8))
+
+  # Check date coercion (2022-W01) with fill gaps
+  influenza_germany |>
+    filter(AgeGroup == "00+", Cases > 100) |>
+    align_and_bin_dates_seasonal(
+      dates_from = ReportingWeek,
+      n = Cases,
+      date_resolution = "isoweek",
+      fill_gaps = TRUE,
+      start = 28
+    ) -> df_flu_aligned
+
+  expect_identical(nrow(df_flu_aligned), 263L)
 })
