@@ -32,7 +32,7 @@
 #'   * `lw_max`: Maximum auto-scaled line width cutoff (default: 8)
 #' @return A `ggplot2` geom layer that can be added to a plot
 #' @seealso [theme_mod_legend_bottom()]
-#' 
+#'
 #' @examples
 #' library(dplyr)
 #' library(tidyr)
@@ -83,7 +83,7 @@ geom_epigantt <- function(mapping = NULL, data = NULL,
 }
 
 #' @import ggplot2
-GeomEpigantt <- ggproto("GeomEpigantt", GeomLinerange,
+GeomEpigantt <- ggplot2::ggproto("GeomEpigantt", GeomLinerange,
   default_aes = ggplot2:::defaults(
     # linewidth = from_theme(borderwidth)
     aes(

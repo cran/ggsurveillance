@@ -2,7 +2,7 @@
 #'
 #' A subset of the weekly German influenza surveillance data from January 2020 to January 2025.
 #'
-#' A data frame with 1,037 rows and 4 columns:
+#' @format A data frame with 1,037 rows and 4 columns:
 #' \describe{
 #'   \item{ReportingWeek}{Reporting Week in "2024-W03" format}
 #'   \item{AgeGroup}{Age groups: `00+` for all and `00-14`, `15-59` and `60+` for age stratified cases.}
@@ -11,8 +11,52 @@
 #' }
 #' @source License CC-BY 4.0: Robert Koch-Institut (2025): Laborbestätigte Influenzafälle in Deutschland. Dataset. Zenodo.
 #' DOI:10.5281/zenodo.14619502. \url{https://github.com/robert-koch-institut/Influenzafaelle_in_Deutschland}
+#' @examples
+#' library(ggplot2)
+#'
+#' influenza_germany |>
+#'   align_dates_seasonal(
+#'     dates_from = ReportingWeek, date_resolution = "isoweek", start = 28
+#'   ) -> df_flu_aligned
+#'
+#' ggplot(df_flu_aligned, aes(x = date_aligned, y = Incidence, color = season)) +
+#'   geom_line() +
+#'   facet_wrap(~AgeGroup) +
+#'   theme_bw() +
+#'   theme_mod_rotate_x_axis_labels_45()
+#'
 "influenza_germany"
 
+#' Population of the German states (2023)
+#'
+#' German Population data by state in 2023
+#'
+#' @format A data frame with 2912 rows and 5 columns:
+#' \describe{
+#'   \item{reporting_date}{Date: Always "2023-12-31"}
+#'   \item{state}{Character: Name of the German state}
+#'   \item{age}{Numeric: Age from 0 to 89. Age 90 includes "90 and above"}
+#'   \item{sex}{Factor: "female" or "male"}
+#'   \item{n}{Numeric: Population size}
+#' }
+#' @source © Statistisches Bundesamt (Destatis), Genesis-Online, 2025:
+#' Bevölkerung: Bundesländer, Stichtag, Geschlecht, Altersjahre (12411-0013).
+#' Data licence Germany (\href{https://www.govdata.de/dl-de/by-2-0}{dl-de/by-2-0})
+#' \url{https://www-genesis.destatis.de/datenbank/online/statistic/12411/table/12411-0013}
+#' @examples
+#' # Age pyramid
+#' library(ggplot2)
+#' library(dplyr)
+#' population_german_states |>
+#'   filter(age < 90) |>
+#'   ggplot(aes(y = age, fill = sex, weight = n)) +
+#'   geom_bar_diverging(width = 1) +
+#'   geom_vline(xintercept = 0) +
+#'   scale_x_continuous_diverging() +
+#'   facet_wrap(~state, scales = "free_x") +
+#'   theme_bw(base_size = 8) +
+#'   theme_mod_legend_top()
+"population_german_states"
 
 #' Line list of a fictional hospital outbreak (Data)
 #'

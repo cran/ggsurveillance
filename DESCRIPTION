@@ -1,6 +1,6 @@
 Package: ggsurveillance
 Title: Tools for Outbreak Investigation/Infectious Disease Surveillance
-Version: 0.3.0
+Version: 0.4.0
 Authors@R: 
     person("Alexander", "Bartel", , "alexander.bartel@fu-berlin.de", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-1280-6138"))
@@ -20,9 +20,9 @@ URL: https://ggsurveillance.biostats.dev,
 BugReports: https://github.com/biostats-dev/ggsurveillance/issues
 Depends: R (>= 4.2.0)
 Imports: cli, dplyr, forcats, ggplot2 (>= 3.5.0), glue, ISOweek,
-        lubridate, rlang, scales, stringr, tidyr, tidyselect
-Suggests: Hmisc, knitr, outbreaks, plotly, rmarkdown, spelling,
-        testthat (>= 3.0.0), tsibble
+        lubridate, rlang, scales (>= 1.4.0), stringr, tidyr, tidyselect
+Suggests: ggrepel, Hmisc, knitr, outbreaks, plotly, rmarkdown,
+        spelling, testthat (>= 3.0.0), tsibble, vdiffr (>= 1.0.8)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Encoding: UTF-8
@@ -30,8 +30,9 @@ Language: en-GB
 LazyData: true
 NeedsCompilation: no
 RoxygenNote: 7.3.2
-Packaged: 2025-04-11 18:19:18 UTC; Alex
-Author: Alexander Bartel [aut, cre] (<https://orcid.org/0000-0002-1280-6138>)
+Packaged: 2025-05-09 19:08:30 UTC; Alex
+Author: Alexander Bartel [aut, cre] (ORCID:
+    <https://orcid.org/0000-0002-1280-6138>)
 Maintainer: Alexander Bartel <alexander.bartel@fu-berlin.de>
 Repository: CRAN
-Date/Publication: 2025-04-11 19:30:02 UTC
+Date/Publication: 2025-05-09 22:50:02 UTC

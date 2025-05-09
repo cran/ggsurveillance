@@ -12,7 +12,7 @@
 
 -   `geom_epicurve()`: A ggplot geom for plotting epicurves
 
-    -   including `stat_bin_date()` for date interval (week, month etc.) based binning of case numbers with perfect alignment with i.e. reporting week.
+    -   including `stat_bin_date()` for date interval (week, month etc.) based binning of case numbers with perfect alignment with e.g. reporting week.
     -   including `scale_y_cases_5er()` for better (case) count axis breaks and positioning.
     -   including `geom_vline_year()`, which automatically detects the turn of the year(s) from the date or datetime axis and draws a vertical line.
 
@@ -20,7 +20,13 @@
 
 -   `create_agegroups()`: Create reproducible age groups with highly customizable labels.
 
--   `geom_epigantt()`: A geom for epigantt plots. Helpful to visualize overlapping time intervals for contact tracing (i.e. hospital outbreaks).
+-   `geom_bar_diverging()`: A geom for diverging bar charts, which can be used to plot age pyramids, likert scales (sentiment analyses) and other data with opposing categories, like vaccination status or imported vs autochthonous (local) infections.
+
+    -   `stat_diverging()` for easy labeling of these charts with category counts/percentages or total counts/percentages
+    -   `scale_x_continuous_diverging()` for symmetric diverging scales
+    -   `geom_area_diverging()` for continuous variables (e.g. changes over time)
+
+-   `geom_epigantt()`: A geom for epigantt plots. Helpful to visualize overlapping time intervals for contact tracing (e.g. hospital outbreaks).
 
     -   including `scale_y_discrete_reverse()` which reverses the order of the categorical scale.
 
@@ -116,3 +122,25 @@ ggplot(df_stays_long) +
 ```
 
 ![Epigantt chart of a fictional hospital outbreak](man/figures/epigantt_plot_readme.png)
+
+### Create Diverging Bar Charts
+
+Useful for age pyramids, vaccination status, likert scales (sentiment) etc.
+
+``` r
+library(dplyr)
+library(ggplot2)
+library(ggsurveillance)
+
+population_german_states |>
+  filter(state %in% c("Berlin", "Mecklenburg-Vorpommern"), age < 90) |>
+  ggplot(aes(y = age, fill = sex, weight = n)) +
+  geom_bar_diverging(width = 1) +
+  geom_vline(xintercept = 0) +
+  scale_x_continuous_diverging(n.breaks = 7) +
+  facet_wrap(~state, scales = "free_x") +
+  theme_bw() +
+  theme_mod_legend_top()
+```
+
+![Age pyramids of Berlin and Mecklenburg-Vorpommern](man/figures/diverging_bar_chart_age_pyramid_readme.png)
