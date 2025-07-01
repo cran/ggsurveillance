@@ -2,40 +2,51 @@
 #'
 #' Creates a epicurve plot for visualizing epidemic case counts in outbreaks (epidemiological curves).
 #' An epicurve is a bar plot, where every case is outlined. \code{geom_epicurve} additionally provides
-#' date-based aggregation of cases (e.g. per week or month and many more).
+#' date-based aggregation of cases (e.g. per week or month and many more) using [bin_by_date].
 #' - For week aggregation both isoweek (World + ECDC) and epiweek (US CDC) are supported.
-#' - `stat_bin_date` and its alias `stat_date_count` provide date based binning only. After binning the by date, these
+#' - `stat_bin_date` and its alias `stat_date_count` provide date based binning only. After binning the by date with [bin_by_date], these
 #' stats behave like [ggplot2::stat_count].
+#' - `geom_epicurve_text` adds text labels to cases on epicurve plots.
+#' - `geom_epicurve_point` adds points/shapes to cases on epicurve plots.
 #'
 #' @param mapping Set of aesthetic mappings created by \code{\link[ggplot2]{aes}}. Commonly used mappings:
 #'   * **x or y**: date or datetime. Numeric is technically supported.
-#'   * **fill**: for colouring groups
-#'   * **weight**: if data is already aggregated (e.g. case counts)
+#'   * **fill**: for colouring groups.
+#'   * **weight**: if data is already aggregated (e.g., case counts).
 #' @param data The data frame containing the variables for the plot
-#' @param stat either "`epicurve`" for outlines around cases or "`bin_date`" for outlines around (fill) groups.
-#' For large numbers of cases please use "`bin_date`" to reduce the number of drawn rectangles.
+#' @param stat For the geoms, use "`epicurve`" (default) to outline individual cases, or "`bin_date`" to aggregate data by group.
+#' For large datasets, "`bin_date`" is recommended for better performance by drawing less rectangles.
+#' @param date_resolution Character string specifying the time unit for date aggregation. If \code{NULL} (default),
+#' no date binning is performed. Possible values include: `"hour"`, `"day"`, `"week"`, `"month"`, `"bimonth"`, `"season"`,
+#'   `"quarter"`, `"halfyear"`, `"year"`. Special values:
+#'   - `"isoweek"`: ISO week standard (week starts Monday, `week_start = 1`)
+#'   - `"epiweek"`: US CDC epiweek standard (week starts Sunday, `week_start = 7`)
+#'   - `"isoyear"`: ISO year (corresponding year of the ISO week, differs from year by 1-3 days)
+#'   - `"epiyear"`: Epidemiological year (corresponding year of the epiweek, differs from year by 1-3 days)
+#'   Defaults to `NULL`, i.e. no binning.
 #' @param position Position adjustment. Currently supports "`stack`" for `geom_epicurve()`.
-#' @param date_resolution Character string specifying the time unit for date aggregation.
-#' Set to \code{NULL} or `NA` for no date aggregation \cr
-#' Possible values are: `"day"`, `"week"`, `"month"`, `"bimonth"`, `"season"`, `"quarter"`, `"halfyear"`, `"year"`.
-#' To special values enforce ISO or US week standard:
-#'  - `isoweek` will force `date_resolution = week` and `week_start = 1` (ISO and ECDC Standard)
-#'  - `epiweek` will force `date_resolution = week` and `week_start = 7` (US CDC Standard)
-#' @param week_start Integer specifying the start of the week (1 = Monday, 7 = Sunday). \cr
-#'        Only used when date_resolution includes weeks. Defaults to 1 (Monday). \cr
-#'        For isoweek use \code{week_start = 1} and for epiweek use \code{week_start = 7}.
+#' @param fill_gaps Logical; If `TRUE`, gaps in the time series will be filled with a count of 0. Often needed for line charts.
 #' @param width Numeric value specifying the width of the bars. If \code{NULL}, calculated
-#'        based on resolution and relative.width
+#'        based on `date_resolution` and `relative.width`.
 #' @param relative.width Numeric value between 0 and 1 adjusting the relative width
 #'        of bars. Defaults to 1
+#' @param vjust Vertical justification of the text or shape. Value between 0 and 1.
+#'        Used by \code{geom_epicurve_text} and \code{geom_epicurve_point} to control
+#'        vertical positioning within the case rectangles. Defaults to 0.5 (center).
 #' @param geom  The geometric object to use to display the data for this layer.
 #'   When using a `stat_*()` function to construct a layer, the `geom` argument
 #'   can be used to override the default coupling between stats and geoms.
 #' @param ... Other arguments passed to \code{\link[ggplot2]{layer}}. For example:
-#'   * \code{colour} Colour of the outlines around cases. Disable with colour = NA. Defaults to "white".
-#'   * \code{linewidth}  Width of the case outlines.
-#' @inheritParams ggplot2::geom_bar
+#'   * **colour**: Colour of the outlines around cases. Disable with `colour = NA`. Defaults to `"white"`.
+#'   * **linewidth**:  Width of the case outlines.
 #'
+#' For `geom_epicurve_text()` additional \code{\link[ggplot2]{geom_text}} arguments are supported:
+#'   * **fontface**: Font face for text labels: one of "plain", "bold", "italic", "bold.italic".
+#'   * **family**: The font family.
+#'   * **size**: The font size.
+#'
+#' @inheritParams ggplot2::geom_bar
+#' @inheritParams bin_by_date
 #' @details
 #' Epi Curves are a public health tool for outbreak investigation. For more details see the references.
 #'
@@ -64,7 +75,8 @@
 #'   geom_epicurve(date_resolution = "week") +
 #'   labs(title = "Epicurve Example") +
 #'   scale_y_cases_5er() +
-#'   scale_x_date(date_breaks = "4 weeks", date_labels = "W%V'%g") + # Correct ISOWeek labels week'year
+#'   # Correct ISOWeek labels for week-year
+#'   scale_x_date(date_breaks = "4 weeks", date_labels = "W%V'%g") + 
 #'   coord_equal(ratio = 7) + # Use coord_equal for square boxes. 'ratio' are the days per week.
 #'   theme_bw()
 #'
@@ -110,6 +122,7 @@ stat_bin_date <- function(mapping = NULL, data = NULL,
                           geom = "line", position = "identity",
                           date_resolution = NULL,
                           week_start = getOption("lubridate.week.start", 1),
+                          fill_gaps = FALSE,
                           ...,
                           na.rm = FALSE,
                           show.legend = NA,
@@ -125,6 +138,7 @@ stat_bin_date <- function(mapping = NULL, data = NULL,
     params = list(
       date_resolution = date_resolution,
       week_start = week_start,
+      fill_gaps = fill_gaps,
       na.rm = na.rm,
       ...
     )
@@ -162,85 +176,46 @@ StatEpicurve <- ggplot2::ggproto("StatEpicurve", Stat,
 
     params
   },
-  compute_layer = function(self, data, params, scales, ...) {
-    date_resolution <- params$date_resolution %||% NA
-    week_start <- params$week_start %||% 1
-    flipped_aes <- params$flipped_aes %||% any(data$flipped_aes) %||% FALSE
+  compute_panel = function(self, data, scales, flipped_aes = FALSE,
+                           date_resolution = NA, week_start = 1, na.rm = FALSE) {
+    # Use StatBinDate$compute_group to handle date binning and width calc
+    binned_data <- StatBinDate$compute_group(
+      data = data,
+      scales = scales,
+      flipped_aes = flipped_aes,
+      date_resolution = date_resolution,
+      week_start = week_start,
+      fill_gaps = FALSE
+    ) |>
+      dplyr::select(-count, -prop)
 
-    if (!is.na(date_resolution) & date_resolution == "isoweek") {
-      date_resolution <- "week"
-      week_start <- 1
-    } # ISO
-    if (!is.na(date_resolution) & date_resolution == "epiweek") {
-      date_resolution <- "week"
-      week_start <- 7
-    } # US
+    data <- ggplot2::flip_data(data, flipped_aes)
+    binned_data <- ggplot2::flip_data(binned_data, flipped_aes) |>
+      dplyr::mutate(
+        x_ll = x,
+        x = NULL,
+        x_ul = ifelse(x_ul == x_ll, x_ul + 1, x_ul)
+      )
 
-    data <- ggplot2::flip_data(data, params$flipped_aes)
-    # Check for CoordFlip since it flips some thing and not others
-    if (!flipped_aes) {
-      sel_scale <- scales$panel_scales_x[[1]]
-      sel_axis <- "x-axis"
-    } else {
-      sel_scale <- scales$panel_scales_y[[1]]
-      sel_axis <- "y-axis"
-    }
+    # R CMD Check fix: add dummy function signature for dplyr::join_by(between())
+    between <- function(x, y_lower, y_upper, ..., bounds) x
+    data <- data |>
+      left_join(binned_data, by = join_by(between(x, x_ll, x_ul, bounds = "[)"))) # see dplyr::join_by()
 
-    # Check scale class to detect date or datetime
-    if (inherits(sel_scale, "ScaleContinuousDate")) {
-      is_date <- TRUE
-    } else if (inherits(sel_scale, "ScaleContinuousDatetime")) {
-      is_date <- FALSE
-    } else {
-      is_date <- TRUE
-      cli::cli_warn("{sel_axis} is not date or datetime. Assuming date scale.")
-    }
+    # Expand counts to create individual records for each case (for epicurve outlines)
+    data$weight <- data$weight %||% rep(1, length(data$x))
+    expanded_data <- data |> expand_counts(weight)
 
-    # Drop missing x
-    complete <- stats::complete.cases(data$x)
-    data <- data |> dplyr::filter(complete)
-    if (!all(complete) && !params$na.rm) {
-      cli::cli_warn(paste0(
-        "Removed {sum(!complete)} row{?s} containing missing values (geom_epicurve)."
-      ))
-    }
-
-    if (!is.na(date_resolution)) {
-      if (is_date) data$x <- lubridate::as_date(data$x) else data$x <- lubridate::as_datetime(data$x)
-
-      data$x_ll <- as.numeric(lubridate::floor_date(data$x,
-        unit = date_resolution,
-        week_start = week_start
-      ))
-      # Use ceiling to be able to infer resolution in days
-      data$x_ul <- as.numeric(lubridate::ceiling_date(data$x,
-        unit = date_resolution,
-        week_start = week_start,
-        change_on_boundary = TRUE
-      ))
-    } else {
-      data$x_ll <- data$x
-      data$x_ul <- data$x
-    }
-
-    if (is.na(date_resolution) & !is_date) {
-      cli::cli_warn("It seems you provided a datetime format. Column used as specified.
-                          Please use date_resolution = 'day' to round to day (stat_epicurve).")
-    }
-
-    weight <- data$weight %||% rep(1, length(data$x))
-    data <- data |> expand_counts(weight)
-
-    bars <- data |>
+    # Add row numbers and prepare final data structure
+    bars <- expanded_data |>
       dplyr::mutate(
         x = x_ll,
         x_ul = x_ul,
-        width = if (!is.na(date_resolution)) x_ul - x_ll else NULL,
-        row_number = dplyr::row_number(data),
+        row_number = dplyr::row_number(),
         count = 1,
-        flipped_aes = params$flipped_aes
+        flipped_aes = flipped_aes
       )
-    ggplot2::flip_data(bars, params$flipped_aes)
+    ggplot2::flip_data(bars, flipped_aes)
   },
   dropped_aes = "weight"
 )
@@ -257,7 +232,7 @@ StatEpicurve <- ggplot2::ggproto("StatEpicurve", Stat,
 StatBinDate <- ggplot2::ggproto("StatBinDate", Stat,
   required_aes = "x|y",
   default_aes = aes(!!!StatCount$default_aes),
-  extra_params = c("na.rm", "date_resolution", "week_start"),
+  extra_params = c("na.rm", "date_resolution", "week_start", "fill_gaps"),
   setup_params = function(self, data, params) {
     params$flipped_aes <- ggplot2::has_flipped_aes(data, params, main_is_orthogonal = FALSE)
 
@@ -272,7 +247,8 @@ StatBinDate <- ggplot2::ggproto("StatBinDate", Stat,
 
     params
   },
-  compute_group = function(self, data, scales, flipped_aes = FALSE, date_resolution = NA, week_start = 1) {
+  compute_group = function(self, data, scales, flipped_aes = FALSE,
+                           date_resolution = NA, week_start = 1, fill_gaps = FALSE) {
     date_resolution <- date_resolution %||% NA
     week_start <- week_start %||% 1
     flipped_aes <- flipped_aes %||% any(data$flipped_aes) %||% FALSE
@@ -295,22 +271,17 @@ StatBinDate <- ggplot2::ggproto("StatBinDate", Stat,
     # Check for CoordFlip since it flips some thing and not others
     if (!flipped_aes) {
       sel_scale <- scales$x
-      sel_axis <- "x-axis"
     } else {
       sel_scale <- scales$y
-      sel_axis <- "y-axis"
     }
 
     # Check scale class to detect date or datetime
-    if (inherits(sel_scale, "ScaleContinuousDate")) {
-      is_date <- TRUE
-    } else if (inherits(sel_scale, "ScaleContinuousDatetime")) {
-      is_date <- FALSE
+    if (inherits(sel_scale, c("ScaleContinuousDate", "ScaleContinuousDatetime"))) {
+      trans <- sel_scale$trans # Use Transformation of the scale
     } else {
-      is_date <- TRUE
-      cli::cli_warn("{sel_axis} is not date or datetime. Assuming date scale.")
+      trans <- scales::transform_date()
+      cli::cli_warn("{sel_scale$aesthetics[1]}-axis is not date or datetime. Assuming date scale.")
     }
-
     # Drop missing x
     complete <- stats::complete.cases(data$x)
     data <- data |> dplyr::filter(complete)
@@ -320,31 +291,44 @@ StatBinDate <- ggplot2::ggproto("StatBinDate", Stat,
       ))
     }
 
-    if (!is.na(date_resolution)) {
-      if (is_date) data$x <- lubridate::as_date(data$x) else data$x <- lubridate::as_datetime(data$x)
+    data$weight <- data$weight %||% rep(1, length(data$x))
 
-      data$x_ll <- as.numeric(lubridate::floor_date(data$x,
-        unit = date_resolution,
-        week_start = week_start
-      ))
-      # Use ceiling to be able to infer resolution in days
+    if (!is.na(date_resolution)) {
+      data$x <- trans$inverse(data$x)
+      org_tz <- lubridate::tz(data$x)
+
+      data <- data |>
+        bin_by_date(
+          dates_from = x, n = weight, fill_gaps = fill_gaps,
+          week_start = week_start, date_resolution = date_resolution
+        )
+
+      if (is.numeric(data$x)) {
+        # For isoyear and epiyear set date to 1st January, binning is still correct
+        date_resolution <- "year"
+        if (trans$name == "date") {
+          data$x <- paste0(data$x, "-01-01") |> lubridate::ymd()
+        } else {
+          data$x <- paste0(data$x, "-01-01") |> lubridate::ymd(tz = org_tz)
+        }
+      }
+
+      data$x_ll <- as.numeric(data$x)
       data$x_ul <- as.numeric(lubridate::ceiling_date(data$x,
         unit = date_resolution,
         week_start = week_start,
         change_on_boundary = TRUE
       ))
     } else {
+      data <- data |>
+        dplyr::arrange(x) |>
+        dplyr::group_by(x) |>
+        dplyr::tally(wt = weight) |>
+        dplyr::ungroup()
+
       data$x_ll <- data$x
       data$x_ul <- data$x
     }
-
-    data$weight <- data$weight %||% rep(1, length(data$x))
-
-    data <- data |>
-      dplyr::arrange(x_ll) |>
-      dplyr::group_by(x_ll, x_ul) |>
-      dplyr::tally(wt = weight) |>
-      dplyr::ungroup()
 
     bars <- data |>
       dplyr::transmute(
@@ -354,7 +338,7 @@ StatBinDate <- ggplot2::ggproto("StatBinDate", Stat,
         x = x_ll,
         x_ul = x_ul,
         width = if (!is.na(date_resolution)) x_ul - x_ll else NULL,
-        .size = length(data$n),
+        .size = length(n),
         flipped_aes = flipped_aes
       )
     ggplot2::flip_data(bars, flipped_aes)
@@ -411,7 +395,6 @@ GeomEpicurve <- ggplot2::ggproto("GeomEpicurve", GeomBar,
         dplyr::arrange(x) -> data_width
 
       # Adjust Bars to avoid jittering when using months
-      # TODO: Call this function only when needed?
       if (nrow(data_width) > 1 & dplyr::n_distinct(data_width$width) != 1) {
         for (i in 2:nrow(data_width)) {
           # Check if there is a space between bars
@@ -464,3 +447,53 @@ GeomEpicurve <- ggplot2::ggproto("GeomEpicurve", GeomBar,
   },
   rename_size = TRUE
 )
+
+#' @rdname geom_epicurve
+#' @export
+geom_epicurve_text <- function(mapping = NULL, data = NULL,
+                               stat = "epicurve",
+                               vjust = 0.5,
+                               date_resolution = NULL,
+                               week_start = getOption("lubridate.week.start", 1),
+                               ..., na.rm = FALSE, show.legend = NA, inherit.aes = TRUE) {
+  ggplot2::layer(
+    geom = GeomText,
+    mapping = mapping,
+    data = data,
+    stat = stat,
+    position = position_stack(vjust = vjust),
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      date_resolution = date_resolution,
+      week_start = week_start,
+      na.rm = na.rm,
+      ...
+    )
+  )
+}
+
+#' @rdname geom_epicurve
+#' @export
+geom_epicurve_point <- function(mapping = NULL, data = NULL,
+                                stat = "epicurve",
+                                vjust = 0.5,
+                                date_resolution = NULL,
+                                week_start = getOption("lubridate.week.start", 1),
+                                ..., na.rm = FALSE, show.legend = NA, inherit.aes = TRUE) {
+  ggplot2::layer(
+    geom = GeomPoint,
+    mapping = mapping,
+    data = data,
+    stat = stat,
+    position = position_stack(vjust = vjust),
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      date_resolution = date_resolution,
+      week_start = week_start,
+      na.rm = na.rm,
+      ...
+    )
+  )
+}

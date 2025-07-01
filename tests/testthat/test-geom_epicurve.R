@@ -9,6 +9,8 @@ test_that("geom_epicurve handles basic date inputs", {
   p <- ggplot(test_dates, aes(x = date, fill = cat)) +
     geom_vline_year() +
     geom_epicurve(date_resolution = "day") +
+    geom_epicurve_point(aes(shape = cat), date_resolution = "day", vjust = 0.3) +
+    geom_epicurve_text(aes(label = cat), date_resolution = "day", vjust = 0.8) +
     stat_bin_date(aes(y = after_stat(count) * 1.05, label = after_stat(count)),
       date_resolution = "day", geom = "text"
     ) +
@@ -21,6 +23,12 @@ test_that("geom_epicurve handles basic date inputs", {
   expect_s3_class(p, "ggplot")
   expect_no_error(p)
   vdiffr::expect_doppelganger("1_geom_epicurve_basic_date", p)
+
+  p1 <- ggplot(test_dates, aes(x = date, fill = cat)) +
+    geom_epicurve()
+
+  expect_no_error(p1)
+  expect_warning(vdiffr::expect_doppelganger("1_geom_epicurve_basic_date_warn", p1))
 })
 
 test_that("geom_epicurve handles date_resolution = NA/NULL", {
@@ -39,6 +47,10 @@ test_that("geom_epicurve handles date_resolution = NA/NULL", {
     ) +
     # Test label_skip()
     scale_y_cases_5er(labels = label_skip()) +
+    scale_x_date(
+      date_breaks = "week", date_labels = "W%V.%G",
+      guide = guide_axis_nested_date()
+    ) +
     theme_mod_legend_top() +
     theme_mod_remove_legend_title()
 
@@ -55,15 +67,43 @@ test_that("geom_epicurve handles flipped aes", {
 
   # Create plot
   p <- ggplot(test_dates, aes(y = date, fill = cat)) +
-    geom_hline_year() +
     geom_epicurve(date_resolution = "day") +
+    geom_hline_year() +
     scale_x_cases_5er(n = 10, n.min = 9, u5.bias = 3) +
+    scale_y_date(
+      date_breaks = "day", date_labels = "%d.%b",
+      guide = guide_axis_nested_date(type = "fence")
+    ) +
     theme_mod_legend_left()
 
   # Test that the plot is created successfully
   expect_s3_class(p, "ggplot")
   expect_no_error(p)
   vdiffr::expect_doppelganger("3_geom_epicurve_flipped_aes", p)
+
+  p1 <- ggplot(test_dates, aes(y = date, fill = cat)) +
+    geom_hline_year() +
+    geom_epicurve(date_resolution = "day") +
+    scale_x_cases_5er(n = 10, n.min = 9, u5.bias = 3) +
+    theme_mod_legend_left() +
+    coord_flip()
+
+  # Test that the plot is created successfully
+  expect_s3_class(p1, "ggplot")
+  expect_no_error(p1)
+  vdiffr::expect_doppelganger("3_geom_epicurve_flipped_aes_back", p1)
+
+  p2 <- ggplot(test_dates, aes(y = date, fill = cat)) +
+    geom_hline_year() +
+    geom_epicurve(date_resolution = "day") +
+    scale_x_cases_5er(n = 10, n.min = 9, u5.bias = 3) +
+    theme_mod_legend_left() +
+    facet_wrap(~cat)
+
+  # Test that the plot is created successfully
+  expect_s3_class(p2, "ggplot")
+  expect_no_error(p2)
+  vdiffr::expect_doppelganger("3_geom_epicurve_facet", p2)
 })
 
 test_that("geom_epicurve handles datetime data", {
@@ -144,6 +184,51 @@ test_that("geom_epicurve with stat = 'bin_date'", {
     theme_mod_remove_minor_grid_x()
   expect_no_error(p2)
   expect_warning(vdiffr::expect_doppelganger("7_geom_epicurve_bin_date_no_res", p2))
+})
+
+test_that("stat_bin_date: test fill_gaps", {
+  set.seed(123)
+  plot_data_epicurve_imp <- data.frame(
+    date = rep(as.Date("2024-11-01") + ((0:300) * 1), times = rpois(301, 0.5))
+    # category = rep(c("A", "B"), times = 7)
+  )
+
+  p1 <- ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
+    stat_bin_date(date_resolution = "week") +
+    scale_y_cases_5er() +
+    scale_x_date(
+      date_breaks = "month", date_labels = "%b.%Y",
+      guide = guide_axis_nested_date(type = "fence")
+    )
+  expect_no_error(p1)
+  vdiffr::expect_doppelganger("8_stat_bin_date_base_new", p1)
+
+  p1_1 <- ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
+    stat_bin_date(date_resolution = "week") +
+    scale_y_cases_5er(limits = NULL)
+  expect_no_error(p1)
+  vdiffr::expect_doppelganger("8_stat_bin_date_base", p1_1)
+
+  p2 <- ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
+    stat_bin_date(date_resolution = "week", fill_gaps = TRUE) +
+    scale_y_cases_5er()
+  expect_no_error(p2)
+  vdiffr::expect_doppelganger("8_stat_bin_date_fill_gaps", p2)
+
+  p3 <- ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
+    stat_bin_date(aes(label = after_stat(count)), date_resolution = "year", geom = "text")
+  expect_no_error(p3)
+  vdiffr::expect_doppelganger("8_stat_bin_date_year", p3)
+
+  p4 <- ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
+    stat_bin_date(aes(label = after_stat(count)), date_resolution = "isoyear", geom = "text")
+  expect_no_error(p4)
+  vdiffr::expect_doppelganger("8_stat_bin_date_isoyear", p4)
+
+  p5 <- ggplot(plot_data_epicurve_imp, aes(x = date, weight = 2)) +
+    stat_bin_date(aes(label = after_stat(count)), date_resolution = "epiyear", geom = "text")
+  expect_no_error(p5)
+  vdiffr::expect_doppelganger("8_stat_bin_date_epiyear", p5)
 })
 
 test_that("scale_y_cases_5er: .auto_pretty", {

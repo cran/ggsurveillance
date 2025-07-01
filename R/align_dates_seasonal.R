@@ -1,10 +1,11 @@
 #' Align dates for seasonal comparison
 #'
 #' @description
-#' Standardizes dates from multiple years to enable comparison of epidemic curves
+#' `align_dates_seasonal()` standardizes dates from multiple years to enable comparison of epidemic curves
 #' and visualization of seasonal patterns in infectious disease surveillance data.
 #' Commonly used for creating periodicity plots of respiratory diseases like
-#' influenza, RSV, or COVID-19.
+#' influenza, RSV, or COVID-19.\cr\cr
+#' `align_and_bin_dates_seasonal()` is a convenience wrapper that first aligns the dates and then bins the data to calculate counts and incidence.
 #'
 #' @details
 #' This function helps create standardized epidemic curves by aligning surveillance
@@ -18,33 +19,27 @@
 #' monthly) with customizable season start points to match different disease
 #' patterns or surveillance protocols.
 #'
-#' @param x Either a data frame with a date column, or a date vector.\cr
-#' Supported date formats are `date` and `datetime` and also commonly used character strings:
-#'   * ISO dates `"2024-03-09"`
-#'   * Month `"2024-03"`
-#'   * Week `"2024-W09"` or `"2024-W09-1"`
-#' @param n Numeric column with case counts (or weights). Supports quoted and unquoted column names.
-#' @param dates_from Column name containing the dates to align. Used when x is a data.frame.
 #' @param date_resolution Character string specifying the temporal resolution.
 #'   One of:
-#'   * `"week"` or `"isoweek"` - Calendar weeks (ISO 8601), reporting weeks as used by the ECDC.
-#'   * `"epiweek"` - Epidemiological weeks (US CDC), i.e. ISO weeks with Sunday as week start.
+#'   * `"week"` or `"isoweek"` - Calendar weeks (ISO 8601), epidemiological reporting weeks as used by the ECDC.
+#'   * `"epiweek"` - Epidemiological weeks as defined by the US CDC (weeks start on Sunday).
 #'   * `"month"` - Calendar months
 #'   * `"day"` - Daily resolution
-#' @param start Numeric value indicating epidemic season start:
+#' @param dates_from Column name containing the dates to align and bin. Used when x is a data.frame.
+#' @param start Numeric value indicating epidemic season start, i.e. the start and end of the new year interval:
 #'   * For `week/epiweek`: week number (default: 28, approximately July)
 #'   * For `month`: month number (default: 7 for July)
 #'   * For `day`: day of year (default: 150, approximately June)
 #' If start is set to "1" the alignment is done for yearly comparison and the shift in dates for seasonality is skipped.
 #' @param target_year Numeric value for the reference year to align dates to. The default target year
 #'  is the start of the most recent season in the data. This way the most recent dates stay unchanged.
-#' @param population A number or a numeric column with the population size. Used to calculate the incidence.
-#' @param fill_gaps Logical; If `TRUE`, gaps in the time series will be filled with 0 cases.
 #'
 #' @param drop_leap_week If `TRUE` and date_resolution is `week`, `isoweek` or `epiweek`, leap weeks (week 53)
-#' are dropped if they are not in the most recent season. Disable if data should be returned.
+#' are dropped if they are not in the most recent season. Set to `FALSE` to retain leap weeks from all seasons.
 #' Dropping week 53 from historical data is the most common approach. Otherwise historical data for week 53 would
 #' map to week 52 if the target season has no leap week, resulting in a doubling of the case counts.
+#'
+#' @inheritParams bin_by_date
 #'
 #' @return A data frame with standardized date columns:
 #'   * `year`: Calendar year from original date
@@ -58,7 +53,7 @@
 #'   * `incidence`: Incidence calculated using n/population
 #'
 #' @examples
-#' # Sesonal Visualization of Germany Influenza Surveillance Data
+#' # Seasonal Visualization of Germany Influenza Surveillance Data
 #' library(ggplot2)
 #'
 #' influenza_germany |>
@@ -76,7 +71,7 @@
 align_dates_seasonal <- function(
     x, dates_from = NULL, date_resolution = c("week", "isoweek", "epiweek", "day", "month"),
     start = NULL, target_year = NULL, drop_leap_week = TRUE) {
-  date_resolution <- match.arg(date_resolution)
+  date_resolution <- rlang::arg_match(date_resolution)
 
   # Enframe if vector supplied
   if (!is.data.frame(x) & rlang::is_vector(x)) {
@@ -154,67 +149,20 @@ align_dates_seasonal <- function(
 #' @export
 
 align_and_bin_dates_seasonal <- function(
-    x, n = 1, dates_from, population = 1, fill_gaps = FALSE,
+    x, dates_from, n = 1, population = 1, fill_gaps = FALSE,
     date_resolution = c("week", "isoweek", "epiweek", "day", "month"),
-    start = NULL, target_year = NULL, drop_leap_week = TRUE) {
-  current_season <- wt <- incidence <- NULL
-
-  # rlang check quo to detect character column names
-  if (!rlang::quo_is_symbol(rlang::enquo(dates_from))) dates_from <- rlang::sym(dates_from)
-  date_var <- rlang::as_name(rlang::enquo(dates_from))
-  # Check if col exists
-  tidyselect::eval_select(date_var, data = x)
-  # Check grouping
-  if (date_var %in% (dplyr::group_vars(x))) {
-    warning(cli::format_warning(
-      "Data.frame grouped by date column: { date_var }. Please remove variable from grouping."
-    ))
-  }
-
-  if (!rlang::quo_is_symbol(rlang::enquo(n))) {
-    if (is.character(n)) n <- rlang::sym(n)
-  }
-
-  if (!rlang::quo_is_symbol(rlang::enquo(population))) {
-    if (is.character(population)) population <- rlang::sym(population)
-  }
+    start = NULL, target_year = NULL, drop_leap_week = TRUE, .groups = "drop") {
+  # Check here for better error message
+  date_resolution <- rlang::arg_match(date_resolution)
 
   x |>
-    dplyr::mutate(
-      {{ dates_from }} := .coerce_to_date({{ dates_from }})
-    ) -> x
-
-  # Save existing grouping of the df
-  grouping <- dplyr::group_vars(x)
-
-  # Calculate incidence
-  x |>
-    dplyr::mutate(
-      wt = !!rlang::enquo(n),
-      population = !!rlang::enquo(population)
+    bin_by_date(
+      dates_from = {{ dates_from }}, n = {{ n }}, population = {{ population }},
+      date_resolution = date_resolution, fill_gaps = fill_gaps, .groups = .groups
     ) |>
-    dplyr::mutate(incidence = wt / population) -> x
-
-  # Fill gaps in time series with 0
-  if (fill_gaps) {
-    rlang::check_installed("tsibble", reason = "to fill the gaps in the time series.")
-    suppressWarnings(x |>
-      tsibble::as_tsibble(index = {{ dates_from }}, key = grouping) |>
-      tsibble::fill_gaps(wt = 0, incidence = 0) |>
-      as.data.frame() |>
-      # TODO: Group by gives a warning. How to fix?
-      dplyr::group_by(dplyr::pick(grouping)) -> x)
-  }
-
-  align_dates_seasonal(
-    x = x, dates_from = {{ dates_from }}, date_resolution = date_resolution,
-    start = start, target_year = target_year, drop_leap_week = drop_leap_week
-  ) |>
-    dplyr::group_by(dplyr::pick(year:current_season), .add = TRUE) |>
-    dplyr::summarise(
-      n = sum(wt, na.rm = TRUE),
-      incidence = sum(incidence, na.rm = TRUE),
-      .groups = "drop"
+    align_dates_seasonal(
+      dates_from = {{ dates_from }}, date_resolution = date_resolution,
+      start = start, target_year = target_year, drop_leap_week = drop_leap_week
     )
 }
 
@@ -339,7 +287,7 @@ align_and_bin_dates_seasonal <- function(
   if (lubridate::is.Date(dates)) {
     return(dates)
   } else if (all(lubridate::is.POSIXct(dates), na.rm = TRUE)) {
-    return(lubridate::as_date(dates))
+    return(lubridate::as_datetime(dates))
   } else if (is.character(dates) && all(stringr::str_detect(dates, date_iso_pattern), na.rm = TRUE)) {
     return(lubridate::as_date(dates))
   } else if (is.character(dates) && all(stringr::str_detect(dates, year_month_pattern), na.rm = TRUE)) {
