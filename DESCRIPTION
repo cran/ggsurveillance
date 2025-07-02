@@ -1,6 +1,6 @@
 Package: ggsurveillance
 Title: Tools for Outbreak Investigation/Infectious Disease Surveillance
-Version: 0.5.0
+Version: 0.5.1
 Authors@R: 
     person("Alexander", "Bartel", , "alexander.bartel@fu-berlin.de", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-1280-6138"))
@@ -33,9 +33,9 @@ Language: en-GB
 LazyData: true
 NeedsCompilation: no
 RoxygenNote: 7.3.2
-Packaged: 2025-07-01 15:57:35 UTC; Alex
+Packaged: 2025-07-02 09:25:44 UTC; Alex
 Author: Alexander Bartel [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-1280-6138>)
 Maintainer: Alexander Bartel <alexander.bartel@fu-berlin.de>
 Repository: CRAN
-Date/Publication: 2025-07-01 16:10:02 UTC
+Date/Publication: 2025-07-02 10:00:09 UTC
